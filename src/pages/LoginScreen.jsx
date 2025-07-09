@@ -1,231 +1,326 @@
-import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/Tabs"
+import React, { useState, useEffect } from "react"
+import { useDispatch, useSelector } from 'react-redux'
+import { motion, AnimatePresence } from "framer-motion"
+import { User, ArrowRight, Sparkles } from "lucide-react"
+import { Button } from "../components/Button"
 import { Input } from "../components/Input"
-import { Button } from '../components/Button'
 import { Label } from "../components/Label"
+import { loginUser } from '../store/slices/authSlice'
 
-const API_URL = 'http://127.0.0.1:10000/verificar-cedula';
-
-const loginMessages = [
-  "Ingresa tu cédula para comenzar."
+const welcomeMessages = [
+  "Bienvenido de vuelta",
+  "Ingresa tu cédula para continuar",
+  "Accede a tu cuenta de forma segura",
 ]
 
 export default function LoginScreen() {
-  const [index, setIndex] = useState(0)
-  const [progress, setProgress] = useState(0)
-  const [cedula, setCedula] = useState('')
-  const [fullName, setFullName] = useState('')
-  const [registerCedula, setRegisterCedula] = useState('')
-  const [error, setError] = useState('')
-  const [registerError, setRegisterError] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [isRegistering, setIsRegistering] = useState(false)
-  const navigate = useNavigate()
+  const dispatch = useDispatch()
+  const { isLoading, error, user } = useSelector((state) => state.auth)
+  
+  const [messageIndex, setMessageIndex] = useState(0)
+  const [cedula, setCedula] = useState("")
+
+  // Rotate welcome messages
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMessageIndex((prev) => (prev + 1) % welcomeMessages.length)
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [])
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      // Redirigir al dashboard
+      window.location.href = '/dashboard'
+    }
+  }, [user])
 
   const handleLogin = async () => {
-    if (isNaN(Number(cedula))) {
-      setError('La cédula debe ser un número válido')
+    if (!cedula.trim() || isNaN(Number(cedula))) {
       return
     }
 
-    setIsLoading(true)
-    setError('')
-
     try {
-      const response = await axios.post(API_URL, { cedula })
-      const { success, message } = response.data
-
-      if (success) {
-        localStorage.setItem('userName', cedula)
-        navigate('/dashboard')
-      } else {
-        setError(message)
-      }
-    } catch (error) {
-      setError('No se pudo conectar con el servidor.')
-    } finally {
-      setIsLoading(false)
+      await dispatch(loginUser(cedula)).unwrap()
+      // El redirect se maneja en el useEffect de arriba
+    } catch (err) {
+      // El error se maneja automáticamente por Redux
+      console.error('Error de login:', err)
     }
   }
 
-  const handleRegister = async () => {
-    if (!fullName.trim()) {
-      setRegisterError('Por favor, ingrese su nombre completo.')
-      return
-    }
-    if (isNaN(Number(registerCedula))) {
-      setRegisterError('La cédula debe ser un número válido')
-      return
-    }
-  
-    setIsRegistering(true)
-    setRegisterError('')
-  
-    try {
-      const response = await axios.post('http://127.0.0.1:10000/guardar-nuevo-registro', {
-        nombre: fullName,
-        cedula: registerCedula
-      })
-      const { success, message } = response.data
-  
-      if (success) {
-        navigate('/dashboard')
-      } else {
-        setRegisterError(message)
-      }
-    } catch (error) {
-      setRegisterError('No se pudo completar el registro. Por favor, inténtelo de nuevo.')
-    } finally {
-      setIsRegistering(false)
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter") {
+      handleLogin()
     }
   }
-  
 
   return (
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-25 to-green-100 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Enhanced animated background elements */}
+      <div className="absolute inset-0">
+        <motion.div
+          className="absolute top-10 left-10 w-80 h-80 bg-gradient-to-r from-green-200/20 to-emerald-200/20 rounded-full blur-3xl"
+          animate={{
+            x: [0, 120, 0],
+            y: [0, -80, 0],
+            scale: [1, 1.2, 1],
+          }}
+          transition={{
+            duration: 25,
+            repeat: Number.POSITIVE_INFINITY,
+            ease: "easeInOut",
+          }}
+        />
+        <motion.div
+          className="absolute bottom-10 right-10 w-96 h-96 bg-gradient-to-l from-emerald-200/25 to-green-200/25 rounded-full blur-3xl"
+          animate={{
+            x: [0, -80, 0],
+            y: [0, 120, 0],
+            scale: [1, 0.8, 1],
+          }}
+          transition={{
+            duration: 30,
+            repeat: Number.POSITIVE_INFINITY,
+            ease: "easeInOut",
+          }}
+        />
+        <motion.div
+          className="absolute top-1/2 left-1/2 w-64 h-64 bg-gradient-to-r from-green-100/30 to-emerald-100/30 rounded-full blur-2xl"
+          animate={{
+            x: [-50, 50, -50],
+            y: [-30, 30, -30],
+            rotate: [0, 180, 360],
+          }}
+          transition={{
+            duration: 20,
+            repeat: Number.POSITIVE_INFINITY,
+            ease: "linear",
+          }}
+        />
+      </div>
+
+      {/* Floating particles */}
+      {[...Array(6)].map((_, i) => (
     <motion.div 
-      className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-100 flex items-center justify-center p-4"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 1 }}
-    >
+          key={i}
+          className="absolute w-2 h-2 bg-green-300/40 rounded-full"
+          style={{
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+          }}
+          animate={{
+            y: [0, -100, 0],
+            opacity: [0, 1, 0],
+          }}
+          transition={{
+            duration: 4 + Math.random() * 2,
+            repeat: Number.POSITIVE_INFINITY,
+            delay: Math.random() * 2,
+          }}
+        />
+      ))}
+
       <motion.div 
-        className="w-full max-w-md"
-        initial={{ opacity: 0, y: 20 }}
+        className="w-full max-w-md relative z-10"
+        initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
       >
         <motion.div 
-          className="bg-white bg-opacity-80 backdrop-filter backdrop-blur-sm rounded-3xl shadow-xl overflow-hidden"
-          whileHover={{ boxShadow: "0 0 30px rgba(52, 211, 153, 0.3)" }}
+          className="bg-white/90 backdrop-filter backdrop-blur-xl rounded-3xl shadow-2xl overflow-hidden border border-green-100/50 relative"
+          whileHover={{
+            boxShadow: "0 0 40px rgba(34, 197, 94, 0.15), 0 0 80px rgba(34, 197, 94, 0.05)",
+            scale: 1.01,
+          }}
           transition={{ duration: 0.3 }}
         >
-          <div className="p-8">
+          {/* Subtle top gradient */}
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-green-400 via-emerald-400 to-green-500" />
+
+          <div className="p-8 relative">
+            {/* Decorative corner elements */}
+            <div className="absolute top-4 right-4 w-8 h-8 bg-gradient-to-br from-green-200/30 to-emerald-200/30 rounded-full blur-sm" />
+            <div className="absolute bottom-4 left-4 w-6 h-6 bg-gradient-to-tr from-emerald-200/30 to-green-200/30 rounded-full blur-sm" />
+
+            {/* Logo Section */}
             <motion.div 
               className="flex justify-center mb-8"
-              initial={{ scale: 0.9, opacity: 0 }}
+              initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
             >
+              <motion.div className="relative" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <motion.div
+                  className="absolute -inset-4 bg-gradient-to-r from-green-400/20 to-emerald-400/20 rounded-full blur-xl"
+                  animate={{
+                    rotate: 360,
+                    scale: [1, 1.1, 1],
+                  }}
+                  transition={{
+                    rotate: { duration: 12, repeat: Number.POSITIVE_INFINITY, ease: "linear" },
+                    scale: { duration: 4, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" },
+                  }}
+                />
               <motion.img
                 src="/sao6.png"
                 alt="Tu App Logo"
-                className="h-24 w-auto drop-shadow-lg"
-                whileHover={{ scale: 1.05, rotate: 5 }}
+                  className="h-24 w-auto drop-shadow-xl relative z-10"
+                  whileHover={{ scale: 1.05, rotate: 2 }}
                 whileTap={{ scale: 0.95 }}
               />
+                <motion.div
+                  className="absolute top-0 right-0 text-green-400"
+                  animate={{
+                    rotate: [0, 10, -10, 0],
+                    scale: [1, 1.2, 1],
+                  }}
+                  transition={{
+                    duration: 3,
+                    repeat: Number.POSITIVE_INFINITY,
+                    ease: "easeInOut",
+                  }}
+                >
+                  <Sparkles className="w-4 h-4" />
+                </motion.div>
+              </motion.div>
             </motion.div>
-            <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="login">Iniciar Sesión</TabsTrigger>
-                <TabsTrigger value="register">Registrarse</TabsTrigger>
-              </TabsList>
-              <TabsContent value="login">
-                <AnimatePresence mode='wait'>
+
+            {/* Welcome Message */}
+            <div className="text-center mb-8">
+              <motion.h1
+                className="text-3xl font-bold bg-gradient-to-r from-green-700 to-emerald-700 bg-clip-text text-transparent mb-3"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+              >
+                Iniciar Sesión
+              </motion.h1>
+
+              <AnimatePresence mode="wait">
                   <motion.p 
-                    key={index}
-                    className="text-lg text-emerald-700 text-center font-medium mb-6"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.5 }}
-                  >
-                    {loginMessages[index]}
+                  key={messageIndex}
+                  className="text-green-600 text-sm font-medium px-4"
+                  initial={{ opacity: 0, y: 15, filter: "blur(4px)" }}
+                  animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                  exit={{ opacity: 0, y: -15, filter: "blur(4px)" }}
+                  transition={{ duration: 0.6 }}
+                >
+                  {welcomeMessages[messageIndex]}
                   </motion.p>
                 </AnimatePresence>
+            </div>
+
+            {/* Login Form */}
                 <motion.div
+              className="space-y-6"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  transition={{ duration: 0.5, delay: 0.8 }}
+              transition={{ duration: 0.6, delay: 0.6 }}
                 >
-                  <div className="space-y-4">
+              {/* Cedula Input */}
                     <div className="space-y-2">
-                      <Label htmlFor="login-cedula">Cédula</Label>
+                <Label htmlFor="cedula" className="text-green-700 text-sm font-semibold">
+                  Cédula
+                </Label>
+                <motion.div className="relative" whileFocusWithin={{ scale: 1.02 }} transition={{ duration: 0.2 }}>
+                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-green-500 w-5 h-5 z-10" />
                       <Input
-                        id="login-cedula"
+                    id="cedula"
                         type="text"
                         placeholder="Ingresa tu cédula"
                         value={cedula}
                         onChange={(e) => setCedula(e.target.value)}
-                      />
-                    </div>
+                    onKeyPress={handleKeyPress}
+                    className="pl-10 border-green-200 focus:border-green-400 focus:ring-green-400/30 bg-white/80 backdrop-blur-sm h-12 rounded-xl transition-all duration-300 hover:bg-white/90"
+                  />
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-green-400/5 to-emerald-400/5 pointer-events-none" />
+                </motion.div>
+              </div>
+
+
+
+              {/* Error Message */}
+              <AnimatePresence>
                     {error && (
-                      <motion.p
-                        className="text-red-500 text-sm"
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                      >
-                        {error}
-                      </motion.p>
-                    )}
+                  <motion.div
+                    className="bg-red-50/80 backdrop-blur-sm border border-red-200/60 rounded-xl p-4"
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <p className="text-red-600 text-sm font-medium">
+                      {error || (!cedula.trim() || isNaN(Number(cedula)) ? "Por favor ingresa una cédula válida" : "")}
+                    </p>
+                  </motion.div>
+                )}
+                {(!cedula.trim() || isNaN(Number(cedula))) && cedula && (
+                  <motion.div
+                    className="bg-red-50/80 backdrop-blur-sm border border-red-200/60 rounded-xl p-4"
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <p className="text-red-600 text-sm font-medium">Por favor ingresa una cédula válida</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Login Button */}
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="pt-2">
                     <Button
                       onClick={handleLogin}
                       disabled={isLoading}
-                      className="w-full"
-                    >
-                      {isLoading ? "Cargando..." : "Iniciar Sesión"}
-                    </Button>
-                  </div>
-                </motion.div>
-              </TabsContent>
-              <TabsContent value="register">
+                  className="w-full bg-gradient-to-r from-green-500 via-emerald-500 to-green-600 hover:from-green-600 hover:via-emerald-600 hover:to-green-700 text-white font-semibold py-4 h-14 rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed group shadow-lg hover:shadow-xl relative overflow-hidden"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  {isLoading ? (
                 <motion.div
+                      className="flex items-center justify-center relative z-10"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  transition={{ duration: 0.5 }}
-                >
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="full-name">Nombre Completo</Label>
-                      <Input
-                        id="full-name"
-                        type="text"
-                        placeholder="Ingresa tu nombre completo"
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="register-cedula">Cédula</Label>
-                      <Input
-                        id="register-cedula"
-                        type="text"
-                        placeholder="Ingresa tu cédula"
-                        value={registerCedula}
-                        onChange={(e) => setRegisterCedula(e.target.value)}
-                      />
-                    </div>
-                    {registerError && (
-                      <motion.p
-                        className="text-red-500 text-sm"
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                      >
-                        {registerError}
-                      </motion.p>
-                    )}
-                    <Button
-                      onClick={handleRegister}
-                      disabled={isRegistering}
-                      className="w-full"
                     >
-                      {isRegistering ? "Registrando..." : "Registrarse"}
-                    </Button>
+                      <motion.div
+                        className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full mr-3"
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                      />
+                      Iniciando sesión...
+                    </motion.div>
+                  ) : (
+                    <span className="flex items-center justify-center relative z-10">
+                      Iniciar Sesión
+                      <ArrowRight className="ml-3 w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
+                    </span>
+                  )}
+                </Button>
+              </motion.div>
+
+              {/* Forgot Password */}
+              <div className="text-center pt-2">
+                <motion.button
+                  className="text-green-600 hover:text-green-800 text-sm transition-colors font-medium hover:underline"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  ¿Olvidaste tu contraseña?
+                </motion.button>
                   </div>
                 </motion.div>
-              </TabsContent>
-            </Tabs>
           </div>
+
+          {/* Enhanced animated bottom border */}
           <motion.div 
-            className="bg-emerald-500 h-1"
-            initial={{ width: "0%" }}
-            animate={{ width: `${progress * 100}%` }}
-            transition={{ duration: 0.5 }}
+            className="h-1 bg-gradient-to-r from-green-400 via-emerald-400 via-green-500 to-emerald-400"
+            initial={{ scaleX: 0, opacity: 0 }}
+            animate={{ scaleX: 1, opacity: 1 }}
+            transition={{ duration: 1.2, delay: 1 }}
           />
         </motion.div>
       </motion.div>
-    </motion.div>
+    </div>
   )
 }
